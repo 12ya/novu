@@ -12,21 +12,33 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const { status, message } = this.getResponseMetadata(exception);
-    const responseStatus: ErrorDto = {
+    const responseBOdy = this.buildResponseBody(status, request, message, exception);
+
+    response.status(status).json(responseBOdy);
+  }
+
+  private buildResponseBody(status: number, request: Request, message: string | object | Object, exception: unknown) {
+    let responseBody = this.buildBaseResponseBody(status, request, message);
+    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+      const uuid = generateUUID();
+      this.pinoLogger.error(`[${uuid}] Service thrown an unexpected exception: `, formatError(exception));
+
+      return { ...responseBody, errorId: uuid };
+    }
+    if (message instanceof Object) {
+      responseBody = { ...responseBody, ...message };
+    }
+
+    return responseBody;
+  }
+
+  private buildBaseResponseBody(status: number, request: Request, message: string | object | Object) {
+    return {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       message,
     };
-    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
-      responseStatus.errorId = generateUUID();
-      this.pinoLogger.error(
-        `[${responseStatus.errorId}] Service thrown an unexpected exception: `,
-        formatError(exception)
-      );
-    }
-
-    response.status(status).json(responseStatus);
   }
 
   private getResponseMetadata(exception: unknown) {
