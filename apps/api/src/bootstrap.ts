@@ -17,6 +17,7 @@ import packageJson from '../package.json';
 import { setupSwagger } from './app/shared/framework/swagger/swagger.controller';
 import { SubscriberRouteGuard } from './app/auth/framework/subscriber-route.guard';
 import { ResponseInterceptor } from './app/shared/framework/response.interceptor';
+import { AllExceptionsFilter } from './exception-filter';
 
 const passport = require('passport');
 const compression = require('compression');
@@ -121,7 +122,8 @@ export async function bootstrap(expressApp?): Promise<INestApplication> {
   await setupSwagger(app);
 
   Logger.log('BOOTSTRAPPED SUCCESSFULLY');
-
+  app.useGlobalFilters(new AllExceptionsFilter(app.get(PinoLogger)));
+  Logger.log('Filter Applied');
   if (expressApp) {
     await app.init();
   } else {
