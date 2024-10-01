@@ -26,6 +26,7 @@ const TEST_TAGS = ['test'];
 let session: UserSession;
 
 const SCHEMA_WITH_TEXT: JsonSchema = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
   properties: {
     text: {
