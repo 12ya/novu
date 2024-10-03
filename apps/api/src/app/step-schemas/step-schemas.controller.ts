@@ -1,6 +1,6 @@
-import { ClassSerializerInterceptor, Controller, Get, Param, UseInterceptors } from '@nestjs/common';
+import { Body, ClassSerializerInterceptor, Controller, Get, Param, Post, UseInterceptors } from '@nestjs/common';
 
-import { UserSessionData } from '@novu/shared';
+import { GeneratePreviewRequestDto, GeneratePreviewResponseDto, UserSessionData } from '@novu/shared';
 import { ExternalApiAccessible, UserSession } from '@novu/application-generic';
 import { StepType } from '@novu/framework';
 
@@ -9,12 +9,17 @@ import { GetStepSchemaCommand } from './usecases/get-step-schema/get-step-schema
 import { UserAuthentication } from '../shared/framework/swagger/api.key.security';
 import { GetStepSchema } from './usecases/get-step-schema/get-step-schema.usecase';
 import { SchemaTypeDto } from './dtos/schema-type.dto';
+import { GeneratePreviewUseCase } from './usecases/generate-preview/generate-preview-use-case';
+import { GeneratePreviewCommand } from './usecases/generate-preview/generate-preview-command';
 
 @Controller('/step-schemas')
 @UserAuthentication()
 @UseInterceptors(ClassSerializerInterceptor)
 export class StepSchemasController {
-  constructor(private getStepDefaultSchemaUsecase: GetStepSchema) {}
+  constructor(
+    private getStepDefaultSchemaUsecase: GetStepSchema,
+    private generatePreviewUseCase: GeneratePreviewUseCase
+  ) {}
 
   @Get('/:stepType')
   @ApiOperation({
@@ -41,5 +46,20 @@ export class StepSchemasController {
     );
 
     return { schema };
+  }
+  @Post('/:stepType/preview')
+  async generatePreview(
+    @UserSession() user: UserSessionData,
+    @Param('stepType') stepType: StepType,
+    @Body() generatePreviewDto: GeneratePreviewRequestDto
+  ): Promise<GeneratePreviewResponseDto> {
+    return await this.generatePreviewUseCase.execute(
+      GeneratePreviewCommand.create({
+        organizationId: user.organizationId,
+        environmentId: user.environmentId,
+        userId: user._id,
+        stepType,
+      })
+    );
   }
 }

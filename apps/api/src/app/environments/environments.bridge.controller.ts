@@ -4,7 +4,6 @@ import {
   Controller,
   Get,
   NotFoundException,
-  Options,
   Param,
   Post,
   Query,
@@ -16,9 +15,11 @@ import { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import { decryptApiKey } from '@novu/application-generic';
 import { EnvironmentRepository, NotificationTemplateEntity, NotificationTemplateRepository } from '@novu/dal';
-import { Client, Event, workflow, Step, Workflow } from '@novu/framework';
+import { Client, Event, Step, workflow, Workflow } from '@novu/framework';
+import { PreviewResult, StepTypeEnum } from '@novu/shared';
 import { ApiCommonResponses } from '../shared/framework/response.decorator';
 import { NovuNestjsHandler } from './novu-nestjs-handler';
+import { OutputRendererFactory } from './render/output-render-factory';
 
 // Unfortunately we need this mapper because the `in_app` step type uses `step.inApp()` in Framework.
 const stepFnFromStepType: Record<Exclude<StepTypeEnum, StepTypeEnum.CUSTOM | StepTypeEnum.TRIGGER>, keyof Step> = {
@@ -30,6 +31,10 @@ const stepFnFromStepType: Record<Exclude<StepTypeEnum, StepTypeEnum.CUSTOM | Ste
   [StepTypeEnum.DIGEST]: 'digest',
   [StepTypeEnum.DELAY]: 'delay',
 };
+
+function renderOutputSchema(type: StepTypeEnum, controls: Record<string, unknown>): PreviewResult {
+  return OutputRendererFactory.createRenderer(type).render(controls);
+}
 
 @ApiCommonResponses()
 @Controller('/environments')
@@ -110,6 +115,7 @@ export class EnvironmentsBridgeController {
           await step[stepFnFromStepType[staticStep.template!.type]](staticStep.stepId, () => controls, {
             // TODO: fix the step typings, `controls` lives on template property, not step
             controlSchema: (staticStep.template as unknown as typeof staticStep).controls?.schema,
+            outputSchema: renderOutputSchema(staticStep.template!.type, controls),
             /*
              * TODO: add conditions
              * Used to construct conditions defined with https://react-querybuilder.js.org/ or similar
