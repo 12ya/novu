@@ -94,7 +94,7 @@ export const SideNavigation = () => {
   const onEnvironmentChange = (value: string) => switchEnvironment(value);
 
   return (
-    <aside className="bg-secondary-alpha-50 flex w-[275px] flex-shrink-0 flex-col gap-3 px-2 pb-3 pt-1.5">
+    <aside className="bg-neutral-alpha-50 flex w-[275px] flex-shrink-0 flex-col gap-3 px-2 pb-3 pt-1.5">
       <OrganizationDropdown />
       <EnvironmentDropdown value={currentEnvironment?.name} data={environmentNames} onChange={onEnvironmentChange} />
       <nav className="flex flex-1 flex-col gap-4">
