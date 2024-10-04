@@ -1,6 +1,6 @@
 import { PreviewIssueType } from './preview-issue.type';
 
-export interface PreviewIssue {
+export interface ControlPreviewIssue {
   issueType: PreviewIssueType;
   variableName?: string;
   message: string;

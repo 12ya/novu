@@ -15,8 +15,9 @@ import { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import { decryptApiKey } from '@novu/application-generic';
 import { EnvironmentRepository, NotificationTemplateEntity, NotificationTemplateRepository } from '@novu/dal';
-import { Client, Event, Step, workflow, Workflow } from '@novu/framework';
-import { PreviewResult, StepTypeEnum } from '@novu/shared';
+import { Client, Event, PostActionEnum, Step, workflow, Workflow } from '@novu/framework';
+import { PreviewResult, StepTypeEnum, WorkflowOriginEnum } from '@novu/shared';
+import { NotificationStepEntity } from '@novu/dal/src';
 import { ApiCommonResponses } from '../shared/framework/response.decorator';
 import { NovuNestjsHandler } from './novu-nestjs-handler';
 import { OutputRendererFactory } from './render/output-render-factory';
@@ -74,17 +75,21 @@ export class EnvironmentsBridgeController {
     @Body() event: Event
   ) {
     const foundWorkflow = await this.getWorkflow(environmentId, workflowId);
+    if (event.action === PostActionEnum.PREVIEW && foundWorkflow.origin === WorkflowOriginEnum.NOVU_CLOUD) {
+      {
+        foundWorkflow.steps = [this.buildPreviewStep(event)];
+      }
 
-    const programmaticallyCreatedWorkflow = this.createWorkflow(foundWorkflow, event.controls);
+      const programmaticallyCreatedWorkflow = this.createWorkflow(foundWorkflow, event.controls, event.action);
 
-    const novuBridgeHandler = new NovuNestjsHandler({
-      workflows: [programmaticallyCreatedWorkflow],
-      client: new Client({ strictAuthentication: true, secretKey: await this.getApiKey(environmentId) }),
-    });
+      const novuBridgeHandler = new NovuNestjsHandler({
+        workflows: [programmaticallyCreatedWorkflow],
+        client: new Client({ strictAuthentication: true, secretKey: await this.getApiKey(environmentId) }),
+      });
 
-    await novuBridgeHandler.handleRequest(req, res, 'POST');
+      await novuBridgeHandler.handleRequest(req, res, 'POST');
+    }
   }
-
   // TODO: wrap the secret key fetching per environmentId in a usecase, including the decryption, add caching.
   private async getApiKey(environmentId: string): Promise<string> {
     const environment = await this.environmentsRepository.findOne({ _id: environmentId });
@@ -134,5 +139,15 @@ export class EnvironmentsBridgeController {
          */
       }
     );
+  }
+
+  private buildPreviewStep(event: Event): NotificationStepEntity {
+    return {
+      _templateId: event.stepId,
+      template: {
+        type: event.stepId as unknown as StepTypeEnum,
+        content: 'mock content',
+      },
+    };
   }
 }

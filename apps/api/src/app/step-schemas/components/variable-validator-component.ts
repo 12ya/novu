@@ -1,4 +1,4 @@
-import { PreviewIssue, PreviewIssueType } from '@novu/shared';
+import { ControlPreviewIssue, PreviewIssueType } from '@novu/shared';
 
 export class VariableValidatorComponent {
   /**
@@ -39,7 +39,7 @@ export class VariableValidatorComponent {
     return placeholders;
   }
 
-  searchAndValidatePlaceholderExistence(controls: object, payload: object): Record<string, PreviewIssue[]> {
+  searchAndValidatePlaceholderExistence(controls: object, payload: object): Record<string, ControlPreviewIssue[]> {
     const placeholders = this.collectPlaceholders(controls);
 
     return this.validatePlaceholders(placeholders, payload);
@@ -50,10 +50,13 @@ export class VariableValidatorComponent {
    *
    * @param {Record<string, string>} placeholders - The object mapping placeholders to their original keys.
    * @param {any} originalObj - The original object to validate against.
-   * @returns {Record<string, PreviewIssue[]>} An object mapping original values to an array of issues.
+   * @returns {Record<string, ControlPreviewIssue[]>} An object mapping original values to an array of issues.
    */
-  public validatePlaceholders(placeholders: Record<string, string>, originalObj: any): Record<string, PreviewIssue[]> {
-    const issues: Record<string, PreviewIssue[]> = {};
+  public validatePlaceholders(
+    placeholders: Record<string, string>,
+    originalObj: any
+  ): Record<string, ControlPreviewIssue[]> {
+    const issues: Record<string, ControlPreviewIssue[]> = {};
 
     for (const placeholder in placeholders) {
       const originalKey = placeholders[placeholder];

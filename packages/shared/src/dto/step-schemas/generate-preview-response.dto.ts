@@ -1,4 +1,4 @@
-import { PreviewIssue } from './preview.issue';
+import { ControlPreviewIssue } from './controlPreviewIssue';
 import { ChannelTypeEnum } from '../../types';
 
 /**
@@ -76,8 +76,8 @@ export class InAppPreviewResult extends PreviewResult {
   };
 }
 
-export type GeneratePreviewResponseDto = {
-  issues: { [controlId: string]: PreviewIssue[] };
+export type zGeneratePreviewResponseDto = {
+  issues: { [controlId: string]: ControlPreviewIssue[] };
   preview?: {} & (
     | {
         type: ChannelTypeEnum.EMAIL;
