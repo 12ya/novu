@@ -1,13 +1,11 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { PinoLogger } from '@novu/application-generic';
 import { randomUUID } from 'node:crypto';
-import { captureException, WithSentry } from '@sentry/nestjs';
+import { captureException } from '@sentry/node';
 
-@Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly pinoLogger: PinoLogger) {}
-  @WithSentry()
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();

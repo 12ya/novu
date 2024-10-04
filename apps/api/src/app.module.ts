@@ -1,11 +1,10 @@
-/* eslint-disable global-require */
-import { DynamicModule, Logger, Module, Provider } from '@nestjs/common';
+/* eslint-disable global-require */ import { DynamicModule, Logger, Module, Provider } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { Type } from '@nestjs/common/interfaces/type.interface';
 import { ForwardReference } from '@nestjs/common/interfaces/modules/forward-reference.interface';
 import { ProfilingModule, TracingModule } from '@novu/application-generic';
 import { isClerkEnabled } from '@novu/shared';
-import { SentryModule } from '@ntegral/nestjs-sentry';
+import { SentryModule } from '@sentry/nestjs/setup';
 import packageJson from '../package.json';
 import { SharedModule } from './app/shared/shared.module';
 import { UserModule } from './app/user/user.module';
@@ -135,7 +134,7 @@ const providers: Provider[] = [
 ];
 
 if (process.env.SENTRY_DSN) {
-  modules.unshift(SentryModule.forRoot({}));
+  modules.unshift(SentryModule.forRoot());
 }
 
 if (process.env.SEGMENT_TOKEN) {
