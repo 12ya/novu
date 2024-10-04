@@ -1,11 +1,13 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
-import { randomBytes } from 'crypto';
 import { PinoLogger } from '@novu/application-generic';
+import { randomUUID } from 'node:crypto';
+import { captureException, WithSentry } from '@sentry/nestjs';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly pinoLogger: PinoLogger) {}
+  @WithSentry()
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -17,10 +19,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(status).json(responseBOdy);
   }
 
-  private buildResponseBody(status: number, request: Request, message: string | object | Object, exception: unknown) {
+  private buildResponseBody(
+    status: number,
+    request: Request,
+    message: string | object | Object,
+    exception: unknown
+  ): ErrorDto {
     let responseBody = this.buildBaseResponseBody(status, request, message);
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
-      const uuid = generateUUID();
+      const uuid = getUuid(exception);
       this.pinoLogger.error(`[${uuid}] Service thrown an unexpected exception: `, formatError(exception));
 
       return { ...responseBody, errorId: uuid };
@@ -41,7 +48,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
   }
 
-  private getResponseMetadata(exception: unknown) {
+  private getResponseMetadata(exception: unknown): { status: number; message: string | object | Object } {
     let status: number;
     let message: string | object;
     if (exception instanceof HttpException) {
@@ -58,13 +65,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
   }
 }
-function generateUUID(): string {
-  // Generate a random 4-byte hex string
-  const randomHex = () => randomBytes(2).toString('hex');
 
-  // Construct the UUID using the random hex values
-  return `${randomHex()}${randomHex()}-${randomHex()}-${randomHex()}-${randomHex()}-${randomHex()}${randomHex()}${randomHex()}`;
-}
 function formatError(error: unknown): string {
   if (error instanceof Error) {
     return `
@@ -84,4 +85,11 @@ export interface ErrorDto {
   errorId?: string;
   path: string;
   message: string | object;
+}
+function getUuid(exception: unknown) {
+  if (process.env.SENTRY_DSN) {
+    return captureException(exception);
+  } else {
+    return randomUUID();
+  }
 }
